@@ -185,23 +185,24 @@ Function Determine-Ref {
 }
 
 Task Determine-Version {
-	if (-not $autoVersion) {
-		if ((git log -1 --decorate=full --simplify-by-decoration --pretty=oneline HEAD |
-			 Select-String '\(' |
-			 % { ($_ -replace "^[^(]*\(([^)]*)\).*$","`$1" -replace " ", "").Split(',') } |
-			 Select-String "^tag:$releaseTagPattern`$" |
-			 % { $_ -replace "^tag:","" } |
-			 Measure-Object
-			).Count -eq 0) {
+	#if (-not $autoVersion) {
+	#	if ((git log -1 --decorate=full --simplify-by-decoration --pretty=oneline HEAD |
+	#		 Select-String '\(' |
+	#		 % { ($_ -replace "^[^(]*\(([^)]*)\).*$","`$1" -replace " ", "").Split(',') } |
+	#		 Select-String "^tag:$releaseTagPattern`$" |
+	#		 % { $_ -replace "^tag:","" } |
+	#		 Measure-Object
+	#		).Count -eq 0) {
 			
-			Throw "The most recent commit must be tagged when not using auto-versioning"
-		}
-	}
+	#		Throw "The most recent commit must be tagged when not using auto-versioning"
+	#	}
+	#}
 
 	$refs = Determine-Ref
-	$script:CompilerVersion = Determine-PathVersion -RefCommit $refs[0] -RefVersion $refs[1] -Path "$baseDir\Compiler"
-	$script:RuntimeVersion = Determine-PathVersion -RefCommit $refs[0] -RefVersion $refs[1] -Path "$baseDir\Runtime"
-	$script:ExtensibilityVersion = Determine-PathVersion -RefCommit $refs[0] -RefVersion $refs[1] -Path "$baseDir\Compiler","$baseDir\Runtime"
+	$version="2.3.1"
+	$script:CompilerVersion = $version
+	$script:RuntimeVersion = $version
+	$script:ExtensibilityVersion =$version
 
 	"Compiler version: $script:CompilerVersion"
 	"Runtime version: $script:RuntimeVersion"

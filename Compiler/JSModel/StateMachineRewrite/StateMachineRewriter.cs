@@ -151,8 +151,9 @@ namespace Saltarelle.Compiler.JSModel.StateMachineRewrite
 				body = hoistResult.Item1;
 			}
 
-			if (taskCompletionSource != null)
-				body = JsStatement.Try(body, JsStatement.Catch(catchVariable, JsStatement.Block(makeSetException(JsExpression.Identifier(catchVariable)))), null);
+            //不生成tryCatch语句
+            //if (taskCompletionSource != null)
+            //    body = JsStatement.Try(body, JsStatement.Catch(catchVariable, JsStatement.Block(makeSetException(JsExpression.Identifier(catchVariable)))), null);
 
 			IEnumerable<JsVariableDeclaration> declarations = new[] { JsStatement.Declaration(_stateVariableName, JsExpression.Number(0)) };
 			if (taskCompletionSource != null)

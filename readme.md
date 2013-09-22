@@ -25,3 +25,8 @@ All packages can be installed through NuGet, as well as downloaded from the CI s
 Any contribution is very welcome. You can contribute by reporting an issue, by creating an import library for your favorite JavaScript library, by implementing one of the features on the unsupported list, or by just using the software.
 
 This project uses the [git-flow](http://nvie.com/posts/a-successful-git-branching-model/) branching model. This means that all work on future versions should be performed on separate branches forked off of the develop branch. Each commit on the master branch must be tagged with a tag with a name like 'release-version', and will be automatically pushed to NuGet.org.
+
+
+
+## my build command:
+psake.ps1 -properties @{autoVersion = $false; noAsync = $true; configuration = "Release";skipTests=$true }
