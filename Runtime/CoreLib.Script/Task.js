@@ -1,4 +1,4 @@
-///////////////////////////////////////////////////////////////////////////////
+﻿///////////////////////////////////////////////////////////////////////////////
 // Task
 
 var ss_Task = function#? DEBUG Task$##(action, state) {
@@ -170,12 +170,13 @@ ss.initClass(ss_Task, {
 		var tcs = new ss_TaskCompletionSource();
 		var _this = this;
 		var fn = function() {
-			try {
+		    //取消设置异常,方便调试
+			//try {
 				tcs.setResult(continuation(_this));
-			}
-			catch (e) {
-				tcs.setException(ss_Exception.wrap(e));
-			}
+			//}
+			//catch (e) {
+			//	tcs.setException(ss_Exception.wrap(e));
+			//}
 		};
 		if (this.isCompleted()) {
 			setTimeout(fn, 0);
