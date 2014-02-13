@@ -6,7 +6,7 @@ ss.__genericCache = {};
 ss._makeGenericTypeName = function#? DEBUG ss$_makeGenericTypeName##(genericType, typeArguments) {
 	var result = genericType.__typeName;
 	for (var i = 0; i < typeArguments.length; i++)
-		result += (i === 0 ? '[' : ',') + ss.getTypeFullName(typeArguments[i]);
+		result += (i === 0 ? '[' : ',') + '[' + ss.getTypeQName(typeArguments[i]) + ']';
 	result += ']';
 	return result;
 };
@@ -22,7 +22,7 @@ ss.registerGenericClassInstance = function#? DEBUG ss$registerGenericClassInstan
 	instance.__typeName = name;
 	instance.__genericTypeDefinition = genericType;
 	instance.__typeArguments = typeArguments;
-	ss.initClass(instance, members, baseType(), interfaceTypes());
+	ss.initClass(instance, genericType.__assembly, members, baseType(), interfaceTypes());
 };
 
 ss.registerGenericInterfaceInstance = function#? DEBUG ss$registerGenericInterfaceInstance##(instance, genericType, typeArguments, members, baseInterfaces) {
@@ -31,7 +31,7 @@ ss.registerGenericInterfaceInstance = function#? DEBUG ss$registerGenericInterfa
 	instance.__typeName = name;
 	instance.__genericTypeDefinition = genericType;
 	instance.__typeArguments = typeArguments;
-	ss.initInterface(instance, members, baseInterfaces());
+	ss.initInterface(instance, genericType.__assembly, members, baseInterfaces());
 };
 
 ss.isGenericTypeDefinition = function#? DEBUG ss$isGenericTypeDefinition##(type) {
@@ -91,8 +91,11 @@ ss.setMetadata = function#? DEBUG ss$_setMetadata##(type, metadata) {
 	}
 }
 
-ss.initClass = function#? DEBUG ss$initClass##(ctor, members, baseType, interfaces) {
+ss.initClass = function#? DEBUG ss$initClass##(ctor, asm, members, baseType, interfaces) {
 	ctor.__class = true;
+	ctor.__assembly = asm;
+	if (!ctor.__typeArguments)
+		asm.__types[ctor.__typeName] = ctor;
 	if (baseType && baseType !== Object) {
 		var f = function(){};
 		f.prototype = baseType.prototype;
@@ -104,32 +107,40 @@ ss.initClass = function#? DEBUG ss$initClass##(ctor, members, baseType, interfac
 		ctor.__interfaces = interfaces;
 };
 
-ss.initGenericClass = function#? DEBUG ss$initGenericClass##(ctor, typeArgumentCount) {
+ss.initGenericClass = function#? DEBUG ss$initGenericClass##(ctor, asm, typeArgumentCount) {
 	ctor.__class = true;
+	ctor.__assembly = asm;
+	asm.__types[ctor.__typeName] = ctor;
 	ctor.__typeArgumentCount = typeArgumentCount;
 	ctor.__isGenericTypeDefinition = true;
 };
 
-ss.initInterface = function#? DEBUG ss$initInterface##(ctor, members, baseInterfaces) {
+ss.initInterface = function#? DEBUG ss$initInterface##(ctor, asm, members, baseInterfaces) {
 	ctor.__interface = true;
+	ctor.__assembly = asm;
+	if (!ctor.__typeArguments)
+		asm.__types[ctor.__typeName] = ctor;
 	if (baseInterfaces)
 		ctor.__interfaces = baseInterfaces;
 	ss.shallowCopy(members, ctor.prototype);
 	ctor.isAssignableFrom = function(type) { return ss.contains(ss.getInterfaces(type), this); };
 };
 
-ss.initGenericInterface = function#? DEBUG ss$initGenericClass##(ctor, typeArgumentCount) {
-	ctor.__interface = true;;
+ss.initGenericInterface = function#? DEBUG ss$initGenericClass##(ctor, asm, typeArgumentCount) {
+	ctor.__interface = true;
+	ctor.__assembly = asm;
+	asm.__types[ctor.__typeName] = ctor;
 	ctor.__typeArgumentCount = typeArgumentCount;
 	ctor.__isGenericTypeDefinition = true;
 };
 
-ss.initEnum = function#? DEBUG ss$initEnum##(ctor, members) {
-	ss.shallowCopy(members, ctor.prototype);
-
+ss.initEnum = function#? DEBUG ss$initEnum##(ctor, asm, members, namedValues) {
 	ctor.__enum = true;
-	ctor.getDefaultValue = ctor.createInstance = function() { return 0; };
-	ctor.isInstanceOfType = function(instance) { return typeof(instance) == 'number'; };
+	ctor.__assembly = asm;
+	asm.__types[ctor.__typeName] = ctor;
+	ss.shallowCopy(members, ctor.prototype);
+	ctor.getDefaultValue = ctor.createInstance = function() { return namedValues ? null : 0; };
+	ctor.isInstanceOfType = function(instance) { return typeof(instance) == (namedValues ? 'string' : 'number'); };
 };
 
 ss.getBaseType = function#? DEBUG ss$getBaseType##(type) {
@@ -159,11 +170,74 @@ ss.getTypeFullName = function#? DEBUG ss$getTypeFullName##(type) {
 	return type.__typeName || type.name || (type.toString().match(/^\s*function\s*([^\s(]+)/) || [])[1] || 'Object';
 };
 
+ss.getTypeQName = function#? DEBUG ss$getTypeFullName##(type) {
+	return ss.getTypeFullName(type) + (type.__assembly ? ', ' + type.__assembly.name : '');
+};
+
 ss.getTypeName = function#? DEBUG ss$getTypeName##(type) {
 	var fullName = ss.getTypeFullName(type);
 	var bIndex = fullName.indexOf('[');
 	var nsIndex = fullName.lastIndexOf('.', bIndex >= 0 ? bIndex : fullName.length);
 	return nsIndex > 0 ? fullName.substr(nsIndex + 1) : fullName;
+};
+
+ss.getTypeNamespace = function#? DEBUG ss$getTypeNamespace##(type) {
+	var fullName = ss.getTypeFullName(type);
+	var bIndex = fullName.indexOf('[');
+	var nsIndex = fullName.lastIndexOf('.', bIndex >= 0 ? bIndex : fullName.length);
+	return nsIndex > 0 ? fullName.substr(0, nsIndex) : '';
+};
+
+ss.getTypeAssembly = function#? DEBUG ss$getTypeAssembly##(type) {
+	if (ss.contains([Date, Number, Boolean, String, Function, Array], type))
+		return ss;
+	else
+		return type.__assembly || null;
+};
+
+ss.getAssemblyType = function#? DEBUG ss$getAssemblyTypes##(asm, name) {
+	var result = [];
+	if (asm.__types) {
+		return asm.__types[name] || null;
+	}
+	else {
+		var a = name.split('.');
+		for (var i = 0; i < a.length; i++) {
+			asm = asm[a[i]];
+			if (!ss.isValue(asm))
+				return null;
+		}
+		if (typeof asm !== 'function')
+			return null;
+		return asm;
+	}
+};
+
+ss.getAssemblyTypes = function#? DEBUG ss$getAssemblyTypes##(asm) {
+	var result = [];
+	if (asm.__types) {
+		for (var t in asm.__types) {
+			if (asm.__types.hasOwnProperty(t))
+				result.push(asm.__types[t]);
+		}
+	}
+	else {
+		var traverse = function(s, n) {
+			for (var c in s) {
+				if (s.hasOwnProperty(c))
+					traverse(s[c], c);
+			}
+			if (typeof(s) === 'function' && ss.isUpper(n.charCodeAt(0)))
+				result.push(s);
+		};
+		traverse(asm, '');
+	}
+	return result;
+};
+
+ss.createAssemblyInstance = function#? DEBUG ss$createAssemblyInstance##(asm, typeName) {
+	var t = ss.getAssemblyType(asm, typeName);
+	return t ? ss.createInstance(t) : null;
 };
 
 ss.getInterfaces = function#? DEBUG ss$getInterfaces##(type) {
@@ -198,15 +272,15 @@ ss.isClass = function#? DEBUG Type$isClass##(type) {
 };
 
 ss.isEnum = function#? DEBUG Type$isEnum##(type) {
-	return (type.__enum == true);
+	return !!type.__enum;
 };
 
 ss.isFlags = function#? DEBUG Type$isFlags##(type) {
-	return type.__metadata && type.__metadata.enumFlags;
+	return type.__metadata && type.__metadata.enumFlags || false;
 };
 
 ss.isInterface = function#? DEBUG Type$isInterface##(type) {
-	return (type.__interface == true);
+	return !!type.__interface;
 };
 
 ss.safeCast = function#? DEBUG ss$safeCast##(instance, type) {
@@ -219,9 +293,9 @@ ss.safeCast = function#? DEBUG ss$safeCast##(instance, type) {
 };
 
 ss.cast = function#? DEBUG ss$cast##(instance, type) {
-	if (instance === null || type === false)
-		return null;
-	else if (typeof(instance) === "undefined" || type === true || ss.isInstanceOfType(instance, type))
+	if (instance === null || typeof(instance) === 'undefined')
+		return instance;
+	else if (type === true || (type !== false && ss.isInstanceOfType(instance, type)))
 		return instance;
 	throw new ss_InvalidCastException('Cannot cast object to type ' + ss.getTypeFullName(type));
 };
@@ -244,23 +318,9 @@ ss.getType = function#? DEBUG ss$getType##(typeName) {
 	if (!typeName)
 		return null;
 
-	ss.__typeCache = ss.__typeCache || {};
-
-	var type = ss.__typeCache[typeName];
-	if (!type) {
-		var arr = typeName.split(',');
-		var type = (arr.length > 1 ? require(arr[1].trim) : global);
-
-		var parts = arr[0].trim().split('.');
-		for (var i = 0; i < parts.length; i++) {
-			type = type[parts[i]];
-			if (!type)
-				break;
-		}
-
-		ss.__typeCache[typeName] = type || null;
-	}
-	return type;
+	var arr = typeName.split(',');
+	var module = (arr.length > 1 ? ss.__assemblies[arr[1].trim()] : global);
+	return module ? ss.getAssemblyType(module, arr[0].trim()) : null;
 };
 
 ss.getDefaultValue = function#? DEBUG ss$getDefaultValue##(type) {
@@ -302,16 +362,26 @@ ss.getAttributes = function#? DEBUG ss$getAttributes##(type, attrType, inherit) 
 	var result = [];
 	if (inherit) {
 		var b = ss.getBaseType(type);
-		if (b)
-			result = ss.getAttributes(b, attrType, true).filter(function(a) { var t = ss.getInstanceType(a); return !t.__metadata || !t.__metadata.attrNoInherit; });
+		if (b) {
+			var a = ss.getAttributes(b, attrType, true);
+			for (var i = 0; i < a.length; i++) {
+				var t = ss.getInstanceType(a[i]);
+				if (!t.__metadata || !t.__metadata.attrNoInherit)
+					result.push(a[i]);
+			}
+		}
 	}
 	if (type.__metadata && type.__metadata.attr) {
 		for (var i = 0; i < type.__metadata.attr.length; i++) {
 			var a = type.__metadata.attr[i];
 			if (attrType == null || ss.isInstanceOfType(a, attrType)) {
 				var t = ss.getInstanceType(a);
-				if (!t.__metadata || !t.__metadata.attrAllowMultiple)
-					result = result.filter(function (a) { return !ss.isInstanceOfType(a, t); });
+				if (!t.__metadata || !t.__metadata.attrAllowMultiple) {
+					for (var j = result.length - 1; j >= 0; j--) {
+						if (ss.isInstanceOfType(result[j], t))
+							result.splice(j, 1);
+					}
+				}
 				result.push(a);
 			}
 		}
@@ -319,7 +389,7 @@ ss.getAttributes = function#? DEBUG ss$getAttributes##(type, attrType, inherit) 
 	return result;
 };
 
-ss.getMembers = function#? DEBUG ss$getAttributes##(type, memberTypes, bindingAttr, name, params) {
+ss.getMembers = function#? DEBUG ss$getMembers##(type, memberTypes, bindingAttr, name, params) {
 	var result = [];
 	if ((bindingAttr & 72) == 72 || (bindingAttr & 6) == 4) {
 		var b = ss.getBaseType(type);
@@ -345,13 +415,21 @@ ss.getMembers = function#? DEBUG ss$getAttributes##(type, memberTypes, bindingAt
 		for (var i = 0; i < type.__metadata.members.length; i++) {
 			var m = type.__metadata.members[i];
 			f(m);
-			['getter','setter','adder','remover'].forEach(function(e) { if (m[e]) f(m[e]); });
+			for (var j = 0; j < 4; j++) {
+				var a = ['getter','setter','adder','remover'][j];
+				if (m[a])
+					f(m[a]);
+			}
 		}
 	}
 
 	if (bindingAttr & 256) {
 		while (type) {
-			var r = result.filter(function(m) { return m.typeDef === type; });
+			var r = [];
+			for (var i = 0; i < result.length; i++) {
+				if (result[i].typeDef === type)
+					r.push(result[i]);
+			}
 			if (r.length > 1)
 				throw new ss_AmbiguousMatchException('Ambiguous match');
 			else if (r.length === 1)

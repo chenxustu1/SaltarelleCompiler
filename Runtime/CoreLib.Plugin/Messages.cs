@@ -42,7 +42,7 @@ namespace CoreLib.Plugin {
 		public static readonly Tuple<int, MessageSeverity, string> _7113 = Tuple.Create(7113, MessageSeverity.Error, "The property {0} cannot have an [IntrinsicPropertyAttribute] because it is overridable.");
 		public static readonly Tuple<int, MessageSeverity, string> _7114 = Tuple.Create(7114, MessageSeverity.Error, "The indexer cannot be decorated with an [IntrinsicPropertyAttribute] because it implements an interface member.");
 		public static readonly Tuple<int, MessageSeverity, string> _7115 = Tuple.Create(7115, MessageSeverity.Error, "The property {0} cannot have an [IntrinsicPropertyAttribute] because it implements an interface member.");
-		public static readonly Tuple<int, MessageSeverity, string> _7116 = Tuple.Create(7116, MessageSeverity.Error, "The indexer must have exactly one parameter in order to have an [IntrinsicPropertyAttribute].");
+		public static readonly Tuple<int, MessageSeverity, string> _7116 = Tuple.Create(7116, MessageSeverity.Error, "Indexers with an [IntrinsicPropertyAttribute], and indexers on [Serializable] types, must have exactly one parameter.");
 		public static readonly Tuple<int, MessageSeverity, string> _7117 = Tuple.Create(7117, MessageSeverity.Error, "The method {0} cannot have an [IntrinsicOperatorAttribute] because it is not an operator method.");
 		public static readonly Tuple<int, MessageSeverity, string> _7118 = Tuple.Create(7118, MessageSeverity.Error, "The [IntrinsicOperatorAttribute] cannot be applied to the operator {0} because it is a conversion operator.");
 		public static readonly Tuple<int, MessageSeverity, string> _7119 = Tuple.Create(7119, MessageSeverity.Error, "The method {0} cannot have a [ScriptSkipAttribute] because it is an interface method.");
@@ -65,7 +65,6 @@ namespace CoreLib.Plugin {
 		public static readonly Tuple<int, MessageSeverity, string> _7137 = Tuple.Create(7137, MessageSeverity.Error, "The member {0} cannot have an [ExpandParamsAttribute] because it does not have a parameter with the 'params' modifier.");
 		public static readonly Tuple<int, MessageSeverity, string> _7138 = Tuple.Create(7138, MessageSeverity.Error, "The member {0} cannot have an empty name specified in its [ScriptName] because it is an interface method.");
 		public static readonly Tuple<int, MessageSeverity, string> _7139 = Tuple.Create(7139, MessageSeverity.Error, "The member {0} cannot have an empty name specified in its [ScriptName] because it is overridable.");
-		public static readonly Tuple<int, MessageSeverity, string> _7140 = Tuple.Create(7140, MessageSeverity.Error, "The member {0} cannot have an empty name specified in its [ScriptName] because it is static.");
 		public static readonly Tuple<int, MessageSeverity, string> _7141 = Tuple.Create(7141, MessageSeverity.Error, "The named specified in a [ScriptNameAttribute] for the event {0} cannot be empty.");
 		public static readonly Tuple<int, MessageSeverity, string> _7142 = Tuple.Create(7142, MessageSeverity.Error, "The named specified in a [ScriptNameAttribute] for the field {0} cannot be empty.");
 		public static readonly Tuple<int, MessageSeverity, string> _7143 = Tuple.Create(7143, MessageSeverity.Error, "The type {0} doesn't contain a matching property or field for the constructor parameter {1}.");
@@ -86,6 +85,8 @@ namespace CoreLib.Plugin {
 		public static readonly Tuple<int, MessageSeverity, string> _7158 = Tuple.Create(7158, MessageSeverity.Error, "Cannot specify both ObeysTypeSystem and TypeCheckCode on the [ImportedAttribute] for the type {0}.");
 		public static readonly Tuple<int, MessageSeverity, string> _7159 = Tuple.Create(7159, MessageSeverity.Error, "Cannot specify TypeCheckCode on the [SerializableAttribute] for the type {0} because it is imported. Specify the code on the [ImportedAttribute] instead.");
 		public static readonly Tuple<int, MessageSeverity, string> _7160 = Tuple.Create(7160, MessageSeverity.Error, "The field {0} cannot have a [NoInlineAttribute] because it is not constant.");
+		public static readonly Tuple<int, MessageSeverity, string> _7161 = Tuple.Create(7161, MessageSeverity.Error, "The interface {0} cannot declare indexers because it is serializable.");
+		public static readonly Tuple<int, MessageSeverity, string> _7162 = Tuple.Create(7162, MessageSeverity.Error, "The value type (struct) {0} must be decorated with a [MutableAttribute] in order to declare instance auto-properties, instance auto events or non-readonly instance fields");
 
 		public static readonly Tuple<int, MessageSeverity, string> _7200 = Tuple.Create(7200, MessageSeverity.Error, "This constructor for the type {0} cannot be used with reflection because it has a special implementation.");
 		public static readonly Tuple<int, MessageSeverity, string> _7201 = Tuple.Create(7201, MessageSeverity.Error, "The {1} {0} cannot be used with reflection because it has a special implementation.");
@@ -94,8 +95,5 @@ namespace CoreLib.Plugin {
 		public static readonly Tuple<int, MessageSeverity, string> _7700 = Tuple.Create(7700, MessageSeverity.Error, "Boxing of 'char' is not allowed because this is likely to cause undesired behaviour. Insert a cast to 'int' or 'string' to tell the compiler about the desired behaviour.");
 		public static readonly Tuple<int, MessageSeverity, string> _7701 = Tuple.Create(7701, MessageSeverity.Error, "The type {0} cannot be used with the 'is' operator because there is no way to check its type.");
 		public static readonly Tuple<int, MessageSeverity, string> _7702 = Tuple.Create(7702, MessageSeverity.Error, "The type {0} cannot be used with the 'as' operator because there is no way to check its type. Use a cast instead (which will be compiled to a no-op).");
-
-		public static readonly Tuple<int, MessageSeverity, string> _7800 = Tuple.Create(7800, MessageSeverity.Error, "The program entry point {0} may not have any parameters.");
-		public static readonly Tuple<int, MessageSeverity, string> _7801 = Tuple.Create(7801, MessageSeverity.Error, "The program entry point {0} must be implemented as a normal method.");
 	}
 }

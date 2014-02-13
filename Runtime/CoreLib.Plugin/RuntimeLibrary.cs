@@ -84,6 +84,12 @@ namespace CoreLib.Plugin {
 		}
 
 		private JsExpression GetTypeDefinitionScriptType(ITypeDefinition type, TypeContext context) {
+			var sem = _metadataImporter.GetTypeSemantics(type);
+			if (sem.Type == TypeScriptSemantics.ImplType.NotUsableFromScript) {
+				_errorReporter.Message(Saltarelle.Compiler.Messages._7522, type.FullName);
+				return JsExpression.Null;
+			}
+
 			if (context != TypeContext.GetScriptType && context != TypeContext.TypeOf && !MetadataUtils.DoesTypeObeyTypeSystem(type)) {
 				return CreateTypeReferenceExpression(KnownTypeReference.Object);
 			}
@@ -103,7 +109,7 @@ namespace CoreLib.Plugin {
 				var pt = (ParameterizedType)type;
 				var def = pt.GetDefinition();
 				var sem = _metadataImporter.GetTypeSemantics(def);
-				if (sem.Type == TypeScriptSemantics.ImplType.NormalType && !sem.IgnoreGenericArguments)
+				if (sem.Type != TypeScriptSemantics.ImplType.NotUsableFromScript && !sem.IgnoreGenericArguments)
 					return JsExpression.Invocation(JsExpression.Member(CreateTypeReferenceExpression(_systemScript), "makeGenericType"), CreateTypeReferenceExpression(type.GetDefinition()), JsExpression.ArrayLiteral(pt.TypeArguments.Select(a => GetScriptType(a, TypeContext.GenericArgument, context))));
 				else
 					return GetTypeDefinitionScriptType(type.GetDefinition(), typeContext);
@@ -160,7 +166,9 @@ namespace CoreLib.Plugin {
 			else if (ss is JsTypeReferenceExpression && st is JsTypeReferenceExpression) {
 				var ts = ((JsTypeReferenceExpression)ss).Type;
 				var tt = ((JsTypeReferenceExpression)st).Type;
-				if (_metadataImporter.GetTypeSemantics(ts).Name == _metadataImporter.GetTypeSemantics(tt).Name && Equals(ts.ParentAssembly, tt.ParentAssembly))
+				var sems = _metadataImporter.GetTypeSemantics(ts);
+				var semt = _metadataImporter.GetTypeSemantics(tt);
+				if (sems.Type != TypeScriptSemantics.ImplType.NotUsableFromScript && semt.Type != TypeScriptSemantics.ImplType.NotUsableFromScript && sems.Name == semt.Name && Equals(ts.ParentAssembly, tt.ParentAssembly))
 					return null;	// The types are the same in script, so no runtime conversion is required.
 			}
 
@@ -313,6 +321,8 @@ namespace CoreLib.Plugin {
 						}
 					}
 				}
+
+				return JsExpression.Invocation(JsExpression.Member(CreateTypeReferenceExpression(KnownTypeReference.NullableOfT), "lift"), new[] { ie.Method }.Concat(ie.Arguments));
 			}
 			if (expression is JsUnaryExpression) {
 				string methodName = null;
@@ -394,17 +404,14 @@ namespace CoreLib.Plugin {
 		}
 
 		public JsExpression Default(IType type, IRuntimeContext context) {
-			if (type.IsReferenceType == true || type.Kind == TypeKind.Dynamic) {
+			if (type.IsReferenceType == true || type.Kind == TypeKind.Dynamic || type.IsKnownType(KnownTypeCode.NullableOfT)) {
 				return JsExpression.Null;
 			}
-			else if (type is ITypeParameter) {
-				return JsExpression.Invocation(JsExpression.Member(CreateTypeReferenceExpression(_systemScript), "getDefaultValue"), GetScriptType(type, TypeContext.GetScriptType, context));
-			}
 			else if (type.Kind == TypeKind.Enum) {
-				return JsExpression.Number(0);
+				return MetadataUtils.IsNamedValues(type.GetDefinition()) ? JsExpression.Null : JsExpression.Number(0);
 			}
-			else {
-				switch (type.GetDefinition().KnownTypeCode) {
+			else if (type is ITypeDefinition) {
+				switch (((ITypeDefinition)type).KnownTypeCode) {
 					case KnownTypeCode.Boolean:
 						return JsExpression.False;
 					case KnownTypeCode.NullableOfT:
@@ -424,10 +431,9 @@ namespace CoreLib.Plugin {
 					case KnownTypeCode.Single:
 					case KnownTypeCode.Double:
 						return JsExpression.Number(0);
-					default:
-						return JsExpression.Invocation(JsExpression.Member(InstantiateType(type, context), "getDefaultValue"));
 				}
 			}
+			return JsExpression.Invocation(JsExpression.Member(CreateTypeReferenceExpression(_systemScript), "getDefaultValue"), GetScriptType(type, TypeContext.GetScriptType, context));
 		}
 
 		public JsExpression CreateArray(IType elementType, IEnumerable<JsExpression> size, IRuntimeContext context) {
@@ -617,6 +623,10 @@ namespace CoreLib.Plugin {
 			               ))
 			           ))
 			       );
+		}
+
+		public JsExpression CloneValueType(JsExpression value, IType type, IRuntimeContext context) {
+			return JsExpression.Invocation(JsExpression.Member(GetScriptType(type, TypeContext.GetScriptType, context), "$clone"), value);
 		}
 	}
 }

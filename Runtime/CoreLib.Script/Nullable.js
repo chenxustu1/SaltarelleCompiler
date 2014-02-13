@@ -19,7 +19,7 @@ var ss_Nullable$1 = function#? DEBUG Nullable$1$##(T) {
 
 ss_Nullable$1.__typeName = 'ss.Nullable$1';
 ss.Nullable$1 = ss_Nullable$1;
-ss.initGenericClass(ss_Nullable$1, 1);
+ss.initGenericClass(ss_Nullable$1, ss, 1);
 
 ss_Nullable$1.eq = function#? DEBUG Nullable$eq##(a, b) {
 	return !ss.isValue(a) ? !ss.isValue(b) : (a === b);
@@ -121,4 +121,12 @@ ss_Nullable$1.pos = function#? DEBUG Nullable$pos##(a) {
 
 ss_Nullable$1.cpl = function#? DEBUG Nullable$cpl##(a) {
 	return ss.isValue(a) ? ~a : null;
+};
+
+ss_Nullable$1.lift = function#? DEBUG Nullable$lift##() {
+	for (var i = 0; i < arguments.length; i++) {
+		if (!ss.isValue(arguments[i]))
+			return null;
+	}
+	return arguments[0].apply(null, Array.prototype.slice.call(arguments, 1));
 };

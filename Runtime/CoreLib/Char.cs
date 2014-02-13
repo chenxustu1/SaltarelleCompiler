@@ -53,7 +53,7 @@ namespace System {
 			return null;
 		}
 
-		[InlineCode("{$System.Script}.formatNumber({this}, {format})")]
+		[InlineCode("{$System.Script}.formatNumber({this}, {format}, 3)")]
 		public string ToString(string format) {
 			return null;
 		}
@@ -76,6 +76,16 @@ namespace System {
 
 		[InlineCode("{$System.Script}.equalsT({this}, {other})")]
 		public bool Equals(char other) {
+			return false;
+		}
+
+		[InlineCode("{$System.Script}.isLower({ch})")]
+		public static bool IsLower(char ch) {
+			return false;
+		}
+
+		[InlineCode("{$System.Script}.isUpper({ch})")]
+		public static bool IsUpper(char ch) {
 			return false;
 		}
 	}

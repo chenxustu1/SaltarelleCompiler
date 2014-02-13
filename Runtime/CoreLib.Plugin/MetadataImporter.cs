@@ -100,12 +100,6 @@ namespace CoreLib.Plugin {
 			}
 		}
 
-		private bool? IsAutoProperty(IProperty property) {
-			if (property.Region == default(DomRegion))
-				return null;
-			return property.Getter != null && property.Setter != null && property.Getter.BodyRegion == default(DomRegion) && property.Setter.BodyRegion == default(DomRegion);
-		}
-
 		private string DetermineNamespace(ITypeDefinition typeDefinition) {
 			while (typeDefinition.DeclaringTypeDefinition != null) {
 				typeDefinition = typeDefinition.DeclaringTypeDefinition;
@@ -256,7 +250,7 @@ namespace CoreLib.Plugin {
 					Message(Messages._7009, typeDefinition);
 				}
 				foreach (var i in typeDefinition.DirectBaseTypes.Where(b => b.Kind == TypeKind.Interface && !GetTypeSemanticsInternal(b.GetDefinition()).IsSerializable)) {
-					Message(Messages._7010, typeDefinition, i);
+					Message(Messages._7010, typeDefinition, i.FullName);
 				}
 				if (typeDefinition.Events.Any(evt => !evt.IsStatic)) {
 					Message(Messages._7011, typeDefinition);
@@ -320,7 +314,24 @@ namespace CoreLib.Plugin {
 				}
 			}
 
-			_typeSemantics[typeDefinition] = new TypeSemantics(TypeScriptSemantics.NormalType(!string.IsNullOrEmpty(nmspace) ? nmspace + "." + typeName : typeName, ignoreGenericArguments: !includeGenericArguments.Value, generateCode: importedAttr == null), isSerializable: isSerializable, isNamedValues: MetadataUtils.IsNamedValues(typeDefinition), isImported: importedAttr != null);
+			bool isMutableValueType = false;
+			if (typeDefinition.Kind == TypeKind.Struct) {
+				isMutableValueType = AttributeReader.HasAttribute<MutableAttribute>(typeDefinition);
+				if (!isMutableValueType) {
+					foreach (var p in typeDefinition.Properties.Where(p => !p.IsStatic && MetadataUtils.IsAutoProperty(p) == true)) {
+						Message(Messages._7162, p.Region, typeDefinition.FullName);
+					}
+					foreach (var e in typeDefinition.Events.Where(e => !e.IsStatic && MetadataUtils.IsAutoEvent(e) == true)) {
+						Message(Messages._7162, e.Region, typeDefinition.FullName);
+					}
+					foreach (var f in typeDefinition.Fields.Where(f => !f.IsStatic && !f.IsReadOnly)) {
+						Message(Messages._7162, f.Region, typeDefinition.FullName);
+					}
+				}
+			}
+
+			string name = !string.IsNullOrEmpty(nmspace) ? nmspace + "." + typeName : typeName;
+			_typeSemantics[typeDefinition] = new TypeSemantics(isMutableValueType ? TypeScriptSemantics.MutableValueType(name, ignoreGenericArguments: !includeGenericArguments.Value, generateCode: importedAttr == null) : TypeScriptSemantics.NormalType(name, ignoreGenericArguments: !includeGenericArguments.Value, generateCode: importedAttr == null), isSerializable: isSerializable, isNamedValues: MetadataUtils.IsNamedValues(typeDefinition), isImported: importedAttr != null);
 		}
 
 		private HashSet<string> GetInstanceMemberNames(ITypeDefinition typeDefinition) {
@@ -597,8 +608,23 @@ namespace CoreLib.Plugin {
 					}
 				}
 
-				usedNames[preferredName] = true;
-				_propertySemantics[property] = PropertyScriptSemantics.Field(preferredName);
+				if (property.IsIndexer) {
+					if (property.DeclaringType.Kind == TypeKind.Interface) {
+						Message(Messages._7161, property.Region);
+						_propertySemantics[property] = PropertyScriptSemantics.GetAndSetMethods(property.Getter != null ? MethodScriptSemantics.NormalMethod("X", generateCode: false) : null, property.Setter != null ? MethodScriptSemantics.NormalMethod("X", generateCode: false) : null);
+					}
+					else if (property.Parameters.Count == 1) {
+						_propertySemantics[property] = PropertyScriptSemantics.GetAndSetMethods(property.Getter != null ? MethodScriptSemantics.NativeIndexer() : null, property.Setter != null ? MethodScriptSemantics.NativeIndexer() : null);
+					}
+					else {
+						Message(Messages._7116, property.Region);
+						_propertySemantics[property] = PropertyScriptSemantics.GetAndSetMethods(property.Getter != null ? MethodScriptSemantics.NormalMethod("X", generateCode: false) : null, property.Setter != null ? MethodScriptSemantics.NormalMethod("X", generateCode: false) : null);
+					}
+				}
+				else {
+					usedNames[preferredName] = true;
+					_propertySemantics[property] = PropertyScriptSemantics.Field(preferredName);
+				}
 				return;
 			}
 
@@ -676,7 +702,7 @@ namespace CoreLib.Plugin {
 						Message(Messages._7153, property, firstField.FullName);
 					}
 
-					if (IsAutoProperty(property) == false) {
+					if (MetadataUtils.IsAutoProperty(property) == false) {
 						Message(Messages._7156, property, firstField.FullName);
 					}
 
@@ -740,7 +766,7 @@ namespace CoreLib.Plugin {
 					Message(Messages._7117, method);
 					_methodSemantics[method] = MethodScriptSemantics.NormalMethod(method.Name);
 				}
-				if (method.Name == "op_Implicit" || method.Name == "op_Explicit") {
+				else if (method.Name == "op_Implicit" || method.Name == "op_Explicit") {
 					Message(Messages._7118, method);
 					_methodSemantics[method] = MethodScriptSemantics.NormalMethod(method.Name);
 				}
@@ -893,7 +919,7 @@ namespace CoreLib.Plugin {
 						if (eaa != null)
 							semantics = semantics.WithEnumerateAsArray();
 						if (semantics.Type == MethodScriptSemantics.ImplType.NormalMethod) {
-							var errorMethod = interfaceImplementations.FirstOrDefault(im => GetMethodSemanticsInternal((IMethod)im.MemberDefinition).Name != semantics.Name);
+							var errorMethod = interfaceImplementations.FirstOrDefault(im => GetMethodSemanticsInternal((IMethod)im.MemberDefinition).GeneratedMethodName != semantics.Name);
 							if (errorMethod != null) {
 								Message(Messages._7134, method, errorMethod.FullName);
 							}
@@ -951,13 +977,8 @@ namespace CoreLib.Plugin {
 								_methodSemantics[method] = MethodScriptSemantics.NormalMethod(method.Name);
 								return;
 							}
-							else if (method.IsStatic) {
-								Message(Messages._7140, method);
-								_methodSemantics[method] = MethodScriptSemantics.NormalMethod(method.Name);
-								return;
-							}
 							else {
-								_methodSemantics[method] = MethodScriptSemantics.InlineCode("{this}(" + string.Join(", ", method.Parameters.Select(p => "{" + p.Name + "}")) + ")", enumerateAsArray: eaa != null);
+								_methodSemantics[method] = MethodScriptSemantics.InlineCode((method.IsStatic ? "{$" + method.DeclaringType.FullName + "}" : "{this}") + "(" + string.Join(", ", method.Parameters.Select(p => "{" + (p.IsParams && epa != null ? "*" : "") + p.Name + "}")) + ")", enumerateAsArray: eaa != null);
 								return;
 							}
 						}

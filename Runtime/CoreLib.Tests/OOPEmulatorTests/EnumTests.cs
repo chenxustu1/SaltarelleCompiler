@@ -10,7 +10,7 @@ namespace CoreLib.Tests.OOPEmulatorTests {
 	public class EnumTests : OOPEmulatorTestBase {
 		[Test]
 		public void EnumWorks() {
-			AssertCorrect(
+			AssertCorrectEmulation(
 @"public enum MyEnum { Value1, Value2, Value3 }
 ",
 @"////////////////////////////////////////////////////////////////////////////////
@@ -19,31 +19,31 @@ var $MyEnum = function() {
 };
 $MyEnum.__typeName = 'MyEnum';
 global.MyEnum = $MyEnum;
-{Script}.initEnum($MyEnum, { value1: 0, value2: 1, value3: 2 });
-");
+-
+{Script}.initEnum($MyEnum, $asm, { value1: 0, value2: 1, value3: 2 });
+", "MyEnum");
 		}
 
 		[Test]
 		public void EnumWithNamespaceWorks() {
-			AssertCorrect(
+			AssertCorrectEmulation(
 @"namespace SomeNamespace.InnerNamespace {
 	public enum MyEnum { Value1, Value2, Value3 }
 }",
-@"global.SomeNamespace = global.SomeNamespace || {};
-global.SomeNamespace.InnerNamespace = global.SomeNamespace.InnerNamespace || {};
-////////////////////////////////////////////////////////////////////////////////
+@"////////////////////////////////////////////////////////////////////////////////
 // SomeNamespace.InnerNamespace.MyEnum
 var $SomeNamespace_InnerNamespace_MyEnum = function() {
 };
 $SomeNamespace_InnerNamespace_MyEnum.__typeName = 'SomeNamespace.InnerNamespace.MyEnum';
 global.SomeNamespace.InnerNamespace.MyEnum = $SomeNamespace_InnerNamespace_MyEnum;
-{Script}.initEnum($SomeNamespace_InnerNamespace_MyEnum, { value1: 0, value2: 1, value3: 2 });
-");
+-
+{Script}.initEnum($SomeNamespace_InnerNamespace_MyEnum, $asm, { value1: 0, value2: 1, value3: 2 });
+", "SomeNamespace.InnerNamespace.MyEnum");
 		}
 
 		[Test]
 		public void FlagsAttributeWorks() {
-			AssertCorrect(
+			AssertCorrectEmulation(
 @"[System.Flags] public enum MyEnum { Value1, Value2, Value3 }
 ",
 @"////////////////////////////////////////////////////////////////////////////////
@@ -52,14 +52,16 @@ var $MyEnum = function() {
 };
 $MyEnum.__typeName = 'MyEnum';
 global.MyEnum = $MyEnum;
-{Script}.initEnum($MyEnum, { value1: 0, value2: 1, value3: 2 });
+-
+{Script}.initEnum($MyEnum, $asm, { value1: 0, value2: 1, value3: 2 });
+-
 {Script}.setMetadata($MyEnum, { enumFlags: true });
-");
+", "MyEnum");
 		}
 
 		[Test]
 		public void NamedValuesAttributeWorks() {
-			AssertCorrect(
+			AssertCorrectEmulation(
 @"[System.Runtime.CompilerServices.NamedValues] public enum MyEnum { Value1, Value2, Value3 }
 ",
 @"////////////////////////////////////////////////////////////////////////////////
@@ -68,13 +70,14 @@ var $MyEnum = function() {
 };
 $MyEnum.__typeName = 'MyEnum';
 global.MyEnum = $MyEnum;
-{Script}.initEnum($MyEnum, { value1: 'value1', value2: 'value2', value3: 'value3' });
-");
+-
+{Script}.initEnum($MyEnum, $asm, { value1: 'value1', value2: 'value2', value3: 'value3' }, true);
+", "MyEnum");
 		}
 
 		[Test]
 		public void InternalEnumIsNotExported() {
-			AssertCorrect(
+			AssertCorrectEmulation(
 @"internal enum MyEnum { Value1, Value2, Value3 }
 ",
 @"////////////////////////////////////////////////////////////////////////////////
@@ -82,8 +85,9 @@ global.MyEnum = $MyEnum;
 var $$MyEnum = function() {
 };
 $$MyEnum.__typeName = '$MyEnum';
-{Script}.initEnum($$MyEnum, { $value1: 0, $value2: 1, $value3: 2 });
-");
+-
+{Script}.initEnum($$MyEnum, $asm, { $value1: 0, $value2: 1, $value3: 2 });
+", "MyEnum");
 		}
 	}
 }

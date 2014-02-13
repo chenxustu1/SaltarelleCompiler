@@ -64,6 +64,26 @@ namespace Saltarelle.Compiler.Tests.DriverTests {
 		}
 
 		[Test]
+		public void AssemblyNameIsCorrectInTheGeneratedScript() {
+			UsingFiles(() => {
+				File.WriteAllText(Path.GetFullPath("File1.cs"), @"using System.Collections; public class C1 { public JsDictionary M() { return null; } }");
+				File.WriteAllText(Path.GetFullPath("File2.cs"), @"using System.Collections; public class C2 { public JsDictionary M() { return null; } }");
+				var options = new CompilerOptions {
+					References         = { new Reference(Common.MscorlibPath) },
+					SourceFiles        = { Path.GetFullPath("File1.cs"), Path.GetFullPath("File2.cs") },
+					OutputAssemblyPath = Path.GetFullPath("Test.Assembly.dll"),
+					OutputScriptPath   = Path.GetFullPath("Test.js")
+				};
+				var driver = new CompilerDriver(new MockErrorReporter());
+				var result = driver.Compile(options);
+
+				Assert.That(result, Is.True);
+				var text = File.ReadAllText(Path.GetFullPath("Test.js"));
+				Assert.That(text.Contains("ss.initAssembly($asm, 'Test.Assembly')"));    // Verify that the symbol was passed to the script compiler.
+			}, "File1.cs", "File2.cs", "Test.Assembly.dll", "Test.js");
+		}
+
+		[Test]
 		public void CompileErrorsAreReportedAndCauseFilesNotToBeGenerated() {
 			UsingFiles(() => {
 				File.WriteAllText(Path.GetFullPath("File.cs"), @"public class C1 { public void M() { var x = y; } }");
@@ -419,28 +439,6 @@ public class C1 {
 				Assert.That(result, Is.True);
 				Assert.That(File.Exists(Path.GetFullPath("Test.dll")), Is.True, "Assembly should be written");
 				Assert.That(File.Exists(Path.GetFullPath("Test.js")), Is.True, "Script should be written");
-			}, "File1.cs", "Test.dll", "Test.js");
-		}
-
-		[Test]
-		public void CannotDeclareUserDefinedStructOutsideOfCorlib() {
-			UsingFiles(() => {
-				File.WriteAllText(Path.GetFullPath("File1.cs"), @"
-using System.Collections.Generic;
-public struct C1 {}
-");
-				var options = new CompilerOptions {
-					References         = { new Reference(Common.MscorlibPath) },
-					SourceFiles        = { Path.GetFullPath("File1.cs") },
-					OutputAssemblyPath = Path.GetFullPath("Test.dll"),
-					OutputScriptPath   = Path.GetFullPath("Test.js")
-				};
-				var er = new MockErrorReporter();
-				var driver = new CompilerDriver(er);
-				var result = driver.Compile(options);
-
-				Assert.That(result, Is.False);
-				Assert.That(er.AllMessages.Where(m => m.Severity == MessageSeverity.Error && m.Code == 7998 && m.Args[0].Equals("user-defined value type (struct)")), Is.Not.Empty);
 			}, "File1.cs", "Test.dll", "Test.js");
 		}
 

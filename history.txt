@@ -1,3 +1,32 @@
+Fixed issue with Object.keys being used before it was defined on browsers that don't support it natively (or if a polyfill was already included) (#276)
+BREAKING CHANGE: Removed Array.prototype.filter, forEach and every from mscorlib. Use some other polyfill if you need these (#276).
+Implemented "G" number format (thanks to Marcel F) (#274)
+Fixed comparison of null values using Comparer<T>.Default (#279)
+Support for user-defined value types (#146)
+Fixed problem with method group conversions on static methods implemented as inline code (#281)
+Fixed problem overriding members that implement interface methods implemented as inline code with a generated method (#272)
+Fixed problem with empty ScriptName and ExpandParams (#264)
+Fixed reflection for members of interfaces (#267)
+Fixed issue causing param arrays to sometimes be created multiple times (#268)
+Better extensibility for the OOP emulator. This can enable lots of cool import libs.
+Allow empty [ScriptName] on static methods (#258).
+Fixed issue causing compiler error with await in if with empty else block (#259).
+Fixed issue overriding toString and other issues caused by the DontEnum bug in IE<9 (#260).
+
+2.4.0
+Fixed issue causing [NamedValues] enums not to work correctly when used as generic arguments (#256)
+Corrected DateTime.UtcNow and added DateTime.ToLocalTime and DateTime.ToUniversal (#250)
+Support escaped braces ({{, }}) in format strings (#252)
+Added possibility to embed resources in the generated script (Assembly.GetManifestResourceNames, Assembly.GetManifestResourceData).
+Added Environment.NewLine
+Added methods Convert.FromBase64String and Convert.ToBase64String
+BREAKING CHANGE: Type.GetType("TypeName, AssemblyName") will now only scan loaded assemblies. Additional assemblies can be loaded using Assembly.Load(). Type.GetType("TypeName") works like before.
+Fixed issue comparing a nullable type parameter to null (#247)
+Added basic Assembly and AppDomain classes (#210)
+[Serializable] types can now declare indexers, as long as they have one parameter (#233)
+Fixed problem when a name imported by the linker clashed with a variable name (eg. when importing a class named 'd3') (#94, #245)
+Fixed a few issues causing internal errors when using generics (#235, 236)
+
 2.3.1
 Added type NotImplementedException
 Fixed problem with assembly-level attributes on imported assemblies (#232).

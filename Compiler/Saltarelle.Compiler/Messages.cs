@@ -23,7 +23,7 @@ namespace Saltarelle.Compiler {
 		public static readonly Message _7518 = Tuple.Create(7518, MessageSeverity.Error, "Cannot use the field {0} in an anonymous object initializer.");
 		public static readonly Message _7519 = Tuple.Create(7519, MessageSeverity.Error, "Cannot create an instance of the type {0} because it is marked as not usable from script.");
 		public static readonly Message _7520 = Tuple.Create(7520, MessageSeverity.Error, "Cannot use the type {0} in as a type argument for the class {1} because it is marked as not usable from script.");
-		public static readonly Message _7522 = Tuple.Create(7522, MessageSeverity.Error, "Cannot use the type {0} in a typeof expression because it is marked as not usable from script.");
+		public static readonly Message _7522 = Tuple.Create(7522, MessageSeverity.Error, "Cannot use the type {0} in an expression because it is marked as not usable from script.");
 		public static readonly Message _7523 = Tuple.Create(7523, MessageSeverity.Error, "Cannot perform method group conversion on {0} because {1}.");
 		public static readonly Message _7524 = Tuple.Create(7524, MessageSeverity.Error, "Cannot convert the method '{0}' to the delegate type '{1}' because the method and delegate type differ in whether they expand their param array.");
 		public static readonly Message _7525 = Tuple.Create(7525, MessageSeverity.Error, "Error in inline code compilation: {0}.");
@@ -36,7 +36,13 @@ namespace Saltarelle.Compiler {
 		public static readonly Message _7533 = Tuple.Create(7533, MessageSeverity.Error, "Cannot convert the delegate type {0} to {1} because they differ in whether the Javascript 'this' is bound to the first parameter.");
 		public static readonly Message _7535 = Tuple.Create(7535, MessageSeverity.Error, "The OnCompleted method used by an 'await' statement must be implemented as a normal method in script.");
 		public static readonly Message _7536 = Tuple.Create(7536, MessageSeverity.Error, "The type parameter {0} is not available for use in script. You must specify [IncludeGenericArguments] on the {1} {2} and/or any method it overrides or implements.");
-		public static readonly Message _7537 = Tuple.Create(7533, MessageSeverity.Error, "Cannot convert the delegate type {0} to {1} because they differ in whether the param array is expanded.");
+		public static readonly Message _7537 = Tuple.Create(7537, MessageSeverity.Error, "Cannot convert the delegate type {0} to {1} because they differ in whether the param array is expanded.");
+		public static readonly Message _7538 = Tuple.Create(7538, MessageSeverity.Error, "Cannot assign to `this' in non-constructor methods of immutable value types.");
+		public static readonly Message _7539 = Tuple.Create(7539, MessageSeverity.Error, "The mutable value type {0} cannot be used as a type argument.");
+
+		public static readonly Message _7800 = Tuple.Create(7800, MessageSeverity.Error, "The program entry point {0} may not have any parameters.");
+		public static readonly Message _7801 = Tuple.Create(7801, MessageSeverity.Error, "The program entry point {0} must be implemented as a normal method.");
+		public static readonly Message _7802 = Tuple.Create(7802, MessageSeverity.Error, "Cyclic initialization required of the types {0}.");
 
 		public static readonly Message _7950 = Tuple.Create(7950, MessageSeverity.Error, "Error writing assembly: {0}.");
 		public static readonly Message _7951 = Tuple.Create(7951, MessageSeverity.Error, "Error writing script: {0}.");
